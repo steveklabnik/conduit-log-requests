@@ -12,7 +12,7 @@ use std::fmt::Show;
 use conduit::Request;
 use middleware::Middleware;
 
-pub struct LogRequests(u32);
+pub struct LogRequests(pub u32);
 
 impl Middleware for LogRequests {
     fn before(&self, req: &mut Request) -> Result<(), Box<Show>> {
