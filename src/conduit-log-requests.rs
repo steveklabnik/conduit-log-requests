@@ -7,28 +7,55 @@ extern crate time;
 extern crate conduit;
 extern crate middleware = "conduit-middleware";
 
+use std::any::AnyRefExt;
 use std::fmt::Show;
 
-use conduit::Request;
+use conduit::{Request, Response};
 use middleware::Middleware;
 
 pub struct LogRequests(pub u32);
 
 impl Middleware for LogRequests {
     fn before(&self, req: &mut Request) -> Result<(), Box<Show>> {
-        match *self {
-            LogRequests(level) => log!(level, "{}", log_message(req))
-        }
+        req.mut_extensions().insert("conduit.log-requests.start",
+                                    box time::precise_time_ns());
         Ok(())
     }
+
+    fn after(&self, req: &mut Request,
+             resp: Result<Response, Box<Show>>) -> Result<Response, Box<Show>> {
+        let start = req.mut_extensions().pop(&"conduit.log-requests.start");
+        let start = *start.unwrap().as_ref::<u64>().unwrap();
+
+        match resp {
+            Ok(ref resp) => self.log_message(req, start, resp.status.val0(),
+                                             None),
+            Err(ref e) => {
+                let msg: &Show = *e;
+                self.log_message(req, start, 500, Some(msg))
+            }
+        }
+        resp
+    }
+
 }
 
-fn log_message(req: &mut Request) -> String {
-    format!("{} [{}] {} {}",
-            req.remote_ip(),
-            time::now().rfc3339(),
-            req.method(),
-            req.path())
+impl LogRequests {
+    fn log_message(&self, req: &mut Request, start: u64, status: uint,
+                   msg: Option<&Show>) {
+        let LogRequests(level) = *self;
+        log!(level, "{} [{}] {} {} - {}ms {}{}",
+             req.remote_ip(),
+             time::now().rfc3339(),
+             req.method(),
+             req.path(),
+             (time::precise_time_ns() - start) / 1000000,
+             status,
+             match msg {
+                 None => String::new(),
+                 Some(s) => format!(": {}", s),
+             })
+    }
 }
 
 #[cfg(test)]
