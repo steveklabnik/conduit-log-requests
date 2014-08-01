@@ -25,7 +25,7 @@ impl Middleware for LogRequests {
     fn after(&self, req: &mut Request,
              resp: Result<Response, Box<Show>>) -> Result<Response, Box<Show>> {
         let start = req.mut_extensions().pop(&"conduit.log-requests.start");
-        let start = *start.unwrap().as_ref::<u64>().unwrap();
+        let start = *start.unwrap().downcast_ref::<u64>().unwrap();
 
         match resp {
             Ok(ref resp) => self.log_message(req, start, resp.status.val0(),
@@ -91,8 +91,8 @@ mod tests {
 
         task(builder, sender);
 
-        let result = reader.read_to_str().ok().expect("No response");
-        let parts = result.as_slice().split(' ').map(|s| s.to_str()).collect::<Vec<String>>();
+        let result = reader.read_to_string().ok().expect("No response");
+        let parts = result.as_slice().split(' ').map(|s| s.to_string()).collect::<Vec<String>>();
 
         assert_eq!(parts.get(0).as_slice(), "127.0.0.1");
         assert!(parts.get(1).as_slice().len() == "[2014-07-01T22:34:06-07:00]".len());
