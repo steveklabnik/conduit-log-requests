@@ -7,7 +7,6 @@ extern crate time;
 extern crate conduit;
 extern crate middleware = "conduit-middleware";
 
-use std::any::AnyRefExt;
 use std::fmt::Show;
 
 use conduit::{Request, Response};
@@ -15,17 +14,17 @@ use middleware::Middleware;
 
 pub struct LogRequests(pub u32);
 
+struct LogStart(u64);
+
 impl Middleware for LogRequests {
     fn before(&self, req: &mut Request) -> Result<(), Box<Show>> {
-        req.mut_extensions().insert("conduit.log-requests.start",
-                                    box time::precise_time_ns());
+        req.mut_extensions().insert(LogStart(time::precise_time_ns()));
         Ok(())
     }
 
     fn after(&self, req: &mut Request,
              resp: Result<Response, Box<Show>>) -> Result<Response, Box<Show>> {
-        let start = req.mut_extensions().pop(&"conduit.log-requests.start");
-        let start = *start.unwrap().downcast_ref::<u64>().unwrap();
+        let LogStart(start) = *req.mut_extensions().find::<LogStart>().unwrap();
 
         match resp {
             Ok(ref resp) => self.log_message(req, start, resp.status.val0(),
@@ -62,7 +61,8 @@ impl LogRequests {
 mod tests {
     extern crate test = "conduit-test";
 
-    use super::*;
+    use {LogRequests};
+
     use std;
     use log;
     use conduit;
