@@ -17,13 +17,13 @@ pub struct LogRequests(pub u32);
 struct LogStart(u64);
 
 impl Middleware for LogRequests {
-    fn before(&self, req: &mut Request) -> Result<(), Box<Show>> {
+    fn before(&self, req: &mut Request) -> Result<(), Box<Show + 'static>> {
         req.mut_extensions().insert(LogStart(time::precise_time_ns()));
         Ok(())
     }
 
-    fn after(&self, req: &mut Request,
-             resp: Result<Response, Box<Show>>) -> Result<Response, Box<Show>> {
+    fn after(&self, req: &mut Request, resp: Result<Response, Box<Show + 'static>>)
+             -> Result<Response, Box<Show + 'static>> {
         let LogStart(start) = *req.mut_extensions().find::<LogStart>().unwrap();
 
         match resp {
