@@ -30,7 +30,7 @@ impl Middleware for LogRequests {
             Ok(ref resp) => self.log_message(req, start, resp.status.val0(),
                                              None),
             Err(ref e) => {
-                let msg: &Show = *e;
+                let msg: &Show = &**e;
                 self.log_message(req, start, 500, Some(msg))
             }
         }
