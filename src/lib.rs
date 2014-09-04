@@ -95,7 +95,8 @@ mod tests {
         let parts = result.as_slice().split(' ').map(|s| s.to_string()).collect::<Vec<String>>();
 
         assert_eq!(parts.get(0).as_slice(), "127.0.0.1");
-        assert!(parts.get(1).as_slice().len() == "[2014-07-01T22:34:06-07:00]".len());
+        assert!(parts.get(1).as_slice().len() == "[2014-07-01T22:34:06-07:00]".len(),
+                "bad length for {}", parts.get(1));
         assert_eq!(parts.get(2).as_slice(), "Get");
         assert_eq!(parts.get(3).as_slice(), "/foo");
     }
