@@ -5,7 +5,7 @@
 
 extern crate time;
 extern crate conduit;
-extern crate middleware = "conduit-middleware";
+extern crate "conduit-middleware" as middleware;
 
 use std::fmt::Show;
 
@@ -59,7 +59,7 @@ impl LogRequests {
 
 #[cfg(test)]
 mod tests {
-    extern crate test = "conduit-test";
+    extern crate "conduit-test" as test;
 
     use {LogRequests};
 
