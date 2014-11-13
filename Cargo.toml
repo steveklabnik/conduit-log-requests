@@ -5,13 +5,13 @@ version = "0.5.0"
 authors = ["wycats@gmail.com"]
 
 [dependencies.conduit]
-
 git = "https://github.com/conduit-rust/conduit.git"
 
 [dependencies.conduit-middleware]
-
 git = "https://github.com/conduit-rust/conduit-middleware.git"
 
-[dev-dependencies.conduit-test]
+[dependencies.time]
+git = "https://github.com/rust-lang/time"
 
+[dev-dependencies.conduit-test]
 git = "https://github.com/conduit-rust/conduit-test.git"
