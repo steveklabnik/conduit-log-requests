@@ -65,12 +65,11 @@ mod tests {
 
     use std;
     use log;
-    use conduit;
     use middleware;
 
     use std::io::{ChanWriter, ChanReader};
     use log::{Logger, LogRecord};
-    use conduit::{Request, Response, Handler};
+    use conduit::{Request, Response, Handler, Method};
 
     struct MyWriter(ChanWriter);
 
@@ -105,7 +104,7 @@ mod tests {
     fn task<H: Handler + 'static + Send>(handler: H, sender: Sender<Vec<u8>>) {
         spawn(proc() {
             log::set_logger(box MyWriter(ChanWriter::new(sender)));
-            let mut request = test::MockRequest::new(conduit::Get, "/foo");
+            let mut request = test::MockRequest::new(Method::Get, "/foo");
             let _ = handler.call(&mut request);
         });
     }
