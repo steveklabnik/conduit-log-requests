@@ -1,5 +1,7 @@
 #![feature(globs)]
 #![feature(phase)]
+#![allow(missing_copy_implementations)]
+#![cfg_attr(test, deny(warnings))]
 
 #[phase(plugin, link)] extern crate log;
 
@@ -27,8 +29,7 @@ impl Middleware for LogRequests {
         let LogStart(start) = *req.mut_extensions().find::<LogStart>().unwrap();
 
         match resp {
-            Ok(ref resp) => self.log_message(req, start, resp.status.val0(),
-                                             None),
+            Ok(ref resp) => self.log_message(req, start, resp.status.0, None),
             Err(ref e) => {
                 let msg: &Show = &**e;
                 self.log_message(req, start, 500, Some(msg))
@@ -102,7 +103,7 @@ mod tests {
     }
 
     fn task<H: Handler + 'static + Send>(handler: H, sender: Sender<Vec<u8>>) {
-        spawn(proc() {
+        spawn(move|| {
             log::set_logger(box MyWriter(ChanWriter::new(sender)));
             let mut request = test::MockRequest::new(Method::Get, "/foo");
             let _ = handler.call(&mut request);
