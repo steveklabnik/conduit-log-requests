@@ -65,6 +65,7 @@ mod tests {
     use {LogRequests};
 
     use std;
+    use std::thread::Thread;
     use log;
     use middleware;
 
@@ -103,11 +104,11 @@ mod tests {
     }
 
     fn task<H: Handler + 'static + Send>(handler: H, sender: Sender<Vec<u8>>) {
-        spawn(move|| {
+        Thread::spawn(move|| {
             log::set_logger(box MyWriter(ChanWriter::new(sender)));
             let mut request = test::MockRequest::new(Method::Get, "/foo");
             let _ = handler.call(&mut request);
-        });
+        }).detach();
     }
 
     fn handler(_: &mut Request) -> Result<Response, ()> {
