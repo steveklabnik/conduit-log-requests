@@ -65,6 +65,7 @@ mod tests {
     use {LogRequests};
 
     use std;
+    use std::sync::mpsc::{channel, Sender};
     use std::thread::Thread;
     use log;
     use middleware;
