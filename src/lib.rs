@@ -1,9 +1,7 @@
-#![feature(globs)]
-#![feature(phase)]
 #![allow(missing_copy_implementations)]
 #![cfg_attr(test, deny(warnings))]
 
-#[phase(plugin, link)] extern crate log;
+#[macro_use] extern crate log;
 
 extern crate time;
 extern crate conduit;
