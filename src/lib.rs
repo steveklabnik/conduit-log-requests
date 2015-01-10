@@ -1,5 +1,6 @@
 #![allow(missing_copy_implementations)]
 #![cfg_attr(test, deny(warnings))]
+#![cfg_attr(test, allow(unstable))]
 
 #[macro_use] extern crate log;
 
@@ -7,7 +8,7 @@ extern crate time;
 extern crate conduit;
 extern crate "conduit-middleware" as middleware;
 
-use std::fmt::Show;
+use std::error::Error;
 
 use conduit::{Request, Response};
 use middleware::Middleware;
@@ -17,19 +18,19 @@ pub struct LogRequests(pub u32);
 struct LogStart(u64);
 
 impl Middleware for LogRequests {
-    fn before(&self, req: &mut Request) -> Result<(), Box<Show + 'static>> {
+    fn before(&self, req: &mut Request) -> Result<(), Box<Error>> {
         req.mut_extensions().insert(LogStart(time::precise_time_ns()));
         Ok(())
     }
 
-    fn after(&self, req: &mut Request, resp: Result<Response, Box<Show + 'static>>)
-             -> Result<Response, Box<Show + 'static>> {
+    fn after(&self, req: &mut Request, resp: Result<Response, Box<Error>>)
+             -> Result<Response, Box<Error>> {
         let LogStart(start) = *req.mut_extensions().find::<LogStart>().unwrap();
 
         match resp {
             Ok(ref resp) => self.log_message(req, start, resp.status.0, None),
             Err(ref e) => {
-                let msg: &Show = &**e;
+                let msg: &Error = &**e;
                 self.log_message(req, start, 500, Some(msg))
             }
         }
@@ -39,10 +40,10 @@ impl Middleware for LogRequests {
 }
 
 impl LogRequests {
-    fn log_message(&self, req: &mut Request, start: u64, status: uint,
-                   msg: Option<&Show>) {
+    fn log_message(&self, req: &mut Request, start: u64, status: u32,
+                   msg: Option<&Error>) {
         let LogRequests(level) = *self;
-        log!(level, "{} [{}] {} {} - {}ms {}{}",
+        log!(level, "{} [{}] {:?} {} - {}ms {}{}",
              req.remote_ip(),
              time::now().rfc3339(),
              req.method(),
@@ -51,7 +52,7 @@ impl LogRequests {
              status,
              match msg {
                  None => String::new(),
-                 Some(s) => format!(": {}", s),
+                 Some(s) => format!(": {} {:?}", s.description(), s.detail()),
              })
     }
 }
@@ -68,6 +69,7 @@ mod tests {
     use log;
     use middleware;
 
+    use std::error::Error;
     use std::io::{ChanWriter, ChanReader};
     use log::{Logger, LogRecord};
     use conduit::{Request, Response, Handler, Method};
@@ -104,17 +106,17 @@ mod tests {
 
     fn task<H: Handler + 'static + Send>(handler: H, sender: Sender<Vec<u8>>) {
         Thread::spawn(move|| {
-            log::set_logger(box MyWriter(ChanWriter::new(sender)));
+            log::set_logger(Box::new(MyWriter(ChanWriter::new(sender))));
             let mut request = test::MockRequest::new(Method::Get, "/foo");
             let _ = handler.call(&mut request);
-        }).detach();
+        });
     }
 
-    fn handler(_: &mut Request) -> Result<Response, ()> {
+    fn handler(_: &mut Request) -> Result<Response, Box<Error>> {
         Ok(Response {
             status: (200, "OK"),
             headers: std::collections::HashMap::new(),
-            body: box std::io::util::NullReader
+            body: Box::new(std::io::util::NullReader)
         })
     }
 }
