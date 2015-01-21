@@ -18,13 +18,13 @@ pub struct LogRequests(pub u32);
 struct LogStart(u64);
 
 impl Middleware for LogRequests {
-    fn before(&self, req: &mut Request) -> Result<(), Box<Error>> {
+    fn before(&self, req: &mut Request) -> Result<(), Box<Error+Send>> {
         req.mut_extensions().insert(LogStart(time::precise_time_ns()));
         Ok(())
     }
 
-    fn after(&self, req: &mut Request, resp: Result<Response, Box<Error>>)
-             -> Result<Response, Box<Error>> {
+    fn after(&self, req: &mut Request, resp: Result<Response, Box<Error+Send>>)
+             -> Result<Response, Box<Error+Send>> {
         let LogStart(start) = *req.mut_extensions().find::<LogStart>().unwrap();
 
         match resp {
@@ -112,7 +112,7 @@ mod tests {
         });
     }
 
-    fn handler(_: &mut Request) -> Result<Response, Box<Error>> {
+    fn handler(_: &mut Request) -> Result<Response, Box<Error+Send>> {
         Ok(Response {
             status: (200, "OK"),
             headers: std::collections::HashMap::new(),
