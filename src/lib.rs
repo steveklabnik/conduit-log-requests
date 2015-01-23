@@ -52,7 +52,7 @@ impl LogRequests {
              status,
              match msg {
                  None => String::new(),
-                 Some(s) => format!(": {} {:?}", s.description(), s.detail()),
+                 Some(s) => format!(": {} {}", s.description(), s),
              })
     }
 }
