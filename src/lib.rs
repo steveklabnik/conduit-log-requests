@@ -1,6 +1,5 @@
 #![allow(missing_copy_implementations)]
 #![cfg_attr(test, deny(warnings))]
-#![cfg_attr(test, allow(unstable))]
 
 #[macro_use] extern crate log;
 
@@ -13,7 +12,7 @@ use std::error::Error;
 use conduit::{Request, Response};
 use middleware::Middleware;
 
-pub struct LogRequests(pub u32);
+pub struct LogRequests(pub log::LogLevel);
 
 struct LogStart(u64);
 
@@ -57,29 +56,30 @@ impl LogRequests {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, foo))] // FIXME: needs a thread-local logger
 mod tests {
     extern crate "conduit-test" as test;
 
     use {LogRequests};
 
-    use std;
-    use std::sync::mpsc::{channel, Sender};
-    use std::thread::Thread;
+    use conduit::{Request, Response, Handler, Method};
+    use log::{Log, LogRecord};
     use log;
     use middleware;
-
     use std::error::Error;
-    use std::io::{ChanWriter, ChanReader};
-    use log::{Logger, LogRecord};
-    use conduit::{Request, Response, Handler, Method};
+    use std::old_io::{ChanWriter, ChanReader};
+    use std::sync::Mutex;
+    use std::sync::mpsc::{channel, Sender};
+    use std::thread::Thread;
+    use std;
 
-    struct MyWriter(ChanWriter);
+    struct MyWriter(Mutex<ChanWriter>);
 
-    impl Logger for MyWriter {
-        fn log(&mut self, record: &LogRecord) {
-            let MyWriter(ref mut inner) = *self;
-            (write!(inner, "{}", record.args)).unwrap();
+    impl Log for MyWriter {
+        fn enabled(&self, _: log::LogLevel, _: &str) -> bool { true }
+        fn log(&self, record: &LogRecord) {
+            let MyWriter(ref inner) = *self;
+            (write!(inner.lock(), "{}", record.args)).unwrap();
         }
     }
 
@@ -89,7 +89,7 @@ mod tests {
         let mut reader = ChanReader::new(receiver);
 
         let mut builder = middleware::MiddlewareBuilder::new(handler);
-        builder.add(LogRequests(log::ERROR));
+        builder.add(LogRequests(log::LogLevel::Error));
 
         task(builder, sender);
 
@@ -106,7 +106,7 @@ mod tests {
 
     fn task<H: Handler + 'static + Send>(handler: H, sender: Sender<Vec<u8>>) {
         Thread::spawn(move|| {
-            log::set_logger(Box::new(MyWriter(ChanWriter::new(sender))));
+            log::set_logger(Box::new(MyWriter(Mutex::new(ChanWriter::new(sender)))));
             let mut request = test::MockRequest::new(Method::Get, "/foo");
             let _ = handler.call(&mut request);
         });
@@ -116,7 +116,7 @@ mod tests {
         Ok(Response {
             status: (200, "OK"),
             headers: std::collections::HashMap::new(),
-            body: Box::new(std::io::util::NullReader)
+            body: Box::new(std::old_io::util::NullReader)
         })
     }
 }

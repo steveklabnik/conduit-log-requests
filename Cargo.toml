@@ -12,7 +12,7 @@ repository = "https://github.com/conduit-rust/conduit-log-requests"
 conduit = "0.6"
 conduit-middleware = "0.6"
 time = "0.1.0"
-log = "0.1.0"
+log = "0.2"
 
 [dev-dependencies]
 conduit-test = "0.6"
