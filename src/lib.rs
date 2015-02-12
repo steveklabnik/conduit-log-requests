@@ -42,6 +42,7 @@ impl LogRequests {
     fn log_message(&self, req: &mut Request, start: u64, status: u32,
                    msg: Option<&Error>) {
         let LogRequests(level) = *self;
+        let level = if msg.is_some() {log::LogLevel::Error} else {level};
         log!(level, "{} [{}] {:?} {} - {}ms {}{}",
              req.remote_ip(),
              time::now().rfc3339(),
