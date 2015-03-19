@@ -44,7 +44,7 @@ impl LogRequests {
         let LogRequests(level) = *self;
         let level = if msg.is_some() {log::LogLevel::Error} else {level};
         log!(level, "{} [{}] {:?} {} - {}ms {}{}",
-             req.remote_ip(),
+             req.remote_addr(),
              time::now().rfc3339(),
              req.method(),
              req.path(),
