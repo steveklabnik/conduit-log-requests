@@ -1,4 +1,3 @@
-#![feature(core)]
 #![cfg_attr(test, deny(warnings))]
 
 #[macro_use] extern crate log;
