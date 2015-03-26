@@ -4,7 +4,7 @@
 
 extern crate time;
 extern crate conduit;
-extern crate "conduit-middleware" as middleware;
+extern crate conduit_middleware as middleware;
 
 use std::error::Error;
 
@@ -58,7 +58,7 @@ impl LogRequests {
 
 #[cfg(all(test, foo))] // FIXME: needs a thread-local logger
 mod tests {
-    extern crate "conduit-test" as test;
+    extern crate conduit_test as test;
 
     use {LogRequests};
 
